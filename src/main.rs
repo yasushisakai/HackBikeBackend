@@ -10,6 +10,12 @@ use log::info;
 
 use handlers::{index, get_data, set_data};
 
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use serde_json::Value;
+
+pub type JSONState = Arc<Mutex<HashMap<String, Value>>>;
+
 fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
         std::env::set_var("RUST_LOG", "actix_web=info,hackbike_backend=debug");
@@ -26,8 +32,11 @@ fn main() -> std::io::Result<()> {
         None => port = "8080".to_string(),
     }
 
+    let hashmap: JSONState = Arc::new(Mutex::new(HashMap::new()));
+
     HttpServer::new(move || {
         App::new()
+            .data(hashmap.clone())
             .wrap(Logger::default())
             .wrap(NormalizePath)
             .wrap(
@@ -43,7 +52,7 @@ fn main() -> std::io::Result<()> {
 
         ////////////////////////////////////////////////////////////////////////////////
             .service(web::resource("/api/data").route(web::get().to_async(get_data)))
-            .service(web::resource("/api/data").route(web::post().to_async(set_data)))
+            .service(web::resource("/api/hoge").route(web::post().to_async(set_data)))
             .service(web::resource("/").route(web::get().to(index)))
         ////////////////////////////////////////////////////////////////////////////////
     })
