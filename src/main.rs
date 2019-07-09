@@ -8,7 +8,7 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 use log::info;
 
-use handlers::{index, get_data, set_data};
+use handlers::{index, get_data, set_data, list_appid, load_json};
 
 fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
@@ -42,9 +42,11 @@ fn main() -> std::io::Result<()> {
             )
 
         ////////////////////////////////////////////////////////////////////////////////
-            .service(web::resource("/api/data").route(web::get().to_async(get_data)))
-            .service(web::resource("/api/hoge").route(web::post().to_async(set_data)))
+            .service(web::resource("/api/data").route(web::get().to_async(get_data))
+                                               .route(web::post().to_async(set_data)))
             .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/view").route(web::get().to(list_appid)))
+            .service(web::resource("/view/{app_id}").route(web::get().to_async(load_json)))
         ////////////////////////////////////////////////////////////////////////////////
     })
     .bind(format!("127.0.0.1:{}", &port))
