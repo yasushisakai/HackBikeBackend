@@ -140,3 +140,24 @@ pub fn load_json(req: HttpRequest) -> impl Future<Item = HttpResponse, Error = E
         .body(contents)
     )
 }
+
+pub fn upload_file(
+    pl: web::Payload,
+    req: HttpRequest
+ ) -> impl Future<Item = HttpResponse, Error = Error> {
+    println!("{:?}", req);
+    println!("--- \n filename: {} \n---", req.match_info().get("file_name").unwrap());
+    pl.concat2().from_err().and_then(move |body| {
+        //println!("{:?}", body);
+        let dirname  = "database";
+        let filename = format!("{}/{}", dirname, req.match_info().get("file_name").unwrap());
+        println!("{}", filename);
+        let mut f = BufWriter::new(fs::File::create(filename).unwrap());
+        f.write(&body).unwrap();
+
+        fut_ok(HttpResponse::Ok()
+            .content_type("text/html")
+            .body(format!("Request done\n")))
+    })
+
+}

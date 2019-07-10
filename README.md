@@ -13,6 +13,12 @@ access to `server_address/api/data`
 ## Checking each app_id data from clent
 access to `server_address/api/data/{app_id}`
 
+## File transfer
+```
+curl -X POST -H "Content-Type: application/octet-stream" --data-binary "@{upload_file_path}" server_address/api/file/{save_filename.ext}
+```
+
+
 # Data Structure
 ```json
 {
