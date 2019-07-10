@@ -56,3 +56,34 @@ root/
 
 ```
 
+# Daemon Service Setup
+## Creating service script
+/etc/systemd/system/hackbike.service
+```
+[Unit]
+Description=Hackable Bike Backend
+
+[Service]
+WorkingDirectory=/path/to/HackBikeBackend
+ExecStart=/path/to/executable/hackbike_backend
+Restart=always
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+```
+## Instructions
+```bash
+# reload daemon
+sudo systemctl daemon-reload
+# start
+sudo systemctl start hackbike
+# check run status
+systemctl status hackbike
+# stop
+sudo systemctl stop hackbike
+# add to startup service
+sudo systemctl enable hackbike
+# check startup status
+systemctl is-enabled hackbike
+```
