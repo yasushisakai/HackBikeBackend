@@ -51,16 +51,19 @@ pub fn set_data(
     _req: HttpRequest
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     pl.concat2().from_err().and_then(move |body| {
+        let mut contents = "Data may saved\n".to_string();
         let data       = std::str::from_utf8(&body).unwrap();
         let obj: Value = serde_json::from_str(data).unwrap();
-//        println!("{}, \n{:?}", data, obj);
 
         if let Value::String(_) = obj["app_id"] {
             if let Value::Number(_) = obj["start_ts"] {
                 let dirname: &str = &*format!("database/{}", obj["app_id"].as_str().unwrap());
 
                 match fs::create_dir_all(dirname){
-                    Err(why) => println!("! {:?}", why.kind()),
+                    Err(why) => {
+                                println!("! {:?}", why.kind());
+                                contents = format!("{:?}", why.kind());
+                    },
                     Ok(_)    => {
                                 let filename = format!("{}/{}_{}.json", dirname, obj["app_id"].as_str().unwrap(), obj["start_ts"]);
                                 println!("{}", filename);
@@ -68,12 +71,16 @@ pub fn set_data(
                                 f.write(data.as_bytes()).unwrap();
                     },
                 }
+            } else {
+                contents = "type of start_ts is invalid, should be Number\n".to_string();
             }
+        } else {
+            contents = "type of app_id is invalid, should be String\n".to_string();
         }
 
         fut_ok(HttpResponse::Ok()
             .content_type("text/html")
-            .body(format!("Data may saved\n")))
+            .body(contents))
     })
 }
 
