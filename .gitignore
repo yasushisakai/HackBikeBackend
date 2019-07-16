@@ -10,3 +10,5 @@ Cargo.lock
 **/*.rs.bk
 
 log.txt
+/html/
+/database/
