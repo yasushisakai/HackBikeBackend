@@ -2,13 +2,13 @@ mod handlers;
 
 use std::env;
 
-use actix_web::http::{header};
-use actix_web::middleware::{Logger, NormalizePath};
 use actix_cors::Cors;
+use actix_web::http::header;
+use actix_web::middleware::{Logger, NormalizePath};
 use actix_web::{web, App, HttpServer};
 use log::info;
 
-use handlers::{index, get_data, set_data, list_appid, load_json, upload_file};
+use handlers::{get_data, index, list_appid, load_json, set_data, upload_file};
 
 fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
@@ -40,13 +40,17 @@ fn main() -> std::io::Result<()> {
                         header::CONTENT_TYPE,
                     ]),
             )
-
-        ////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////
             .service(web::resource("/").route(web::get().to(index)))
-            .service(web::resource("/api/data").route(web::get().to_async(list_appid))
-                                               .route(web::post().to_async(set_data)))
+            .service(
+                web::resource("/api/data")
+                    .route(web::get().to_async(list_appid))
+                    .route(web::post().to_async(set_data)),
+            )
             .service(web::resource("/api/data/{app_id}").route(web::get().to_async(load_json)))
-            .service(web::resource("/api/file/{file_name}").route(web::post().to_async(upload_file)))
+            .service(
+                web::resource("/api/file/{file_name}").route(web::post().to_async(upload_file)),
+            )
             .service(web::resource("/test").route(web::get().to_async(get_data)))
         ////////////////////////////////////////////////////////////////////////////////
     })
