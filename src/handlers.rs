@@ -73,7 +73,7 @@ pub fn set_data(
                         );
                         println!("{}", filename);
                         let mut f = BufWriter::new(fs::File::create(filename).unwrap());
-                        f.write(data.as_bytes()).unwrap();
+                        f.write_all(data.as_bytes()).expect("could not write to file");
                     }
                 }
             } else {
@@ -145,7 +145,7 @@ pub fn load_json(req: HttpRequest) -> impl Future<Item = HttpResponse, Error = E
                 for line in reader.lines() {
                     let line = line.unwrap(); // Ignore errors.
                     if index == 0 {
-                        contents = format!("{}", line);
+                        contents = line.to_string();
                     } else {
                         contents = format!("{},\n{}", contents, line);
                     }
@@ -177,12 +177,12 @@ pub fn upload_file(
         let filename = format!("{}/{}", dirname, req.match_info().get("file_name").unwrap());
         println!("{}", filename);
         let mut f = BufWriter::new(fs::File::create(filename).unwrap());
-        f.write(&body).unwrap();
+        f.write_all(&body).expect("could not write to file");
 
         fut_ok(
             HttpResponse::Ok()
                 .content_type("text/html")
-                .body(format!("Request done\n")),
+                .body("Request done\n".to_string()),
         )
     })
 }
