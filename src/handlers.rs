@@ -198,6 +198,7 @@ pub fn set_device(
     pl: web::Payload,
     device_name: web::Path<String>,
     data: web::Data<MemoryData>,
+    req: web::HttpRequest,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     pl.concat2().from_err().and_then(move |body| {
         let device_name: String = device_name.to_owned();
@@ -208,14 +209,23 @@ pub fn set_device(
             None => Map::new(),
         };
 
-        let json_data: Value = match serde_json::from_slice(&body) {
+        let mut json_data: Map<String, Value> = match serde_json::from_slice(&body) {
             Ok(d) => d,
-            Err(_) => {
-                return fut_ok(HttpResponse::build(StatusCode::BAD_REQUEST).body("Error parsing"))
+            Err(e) => {
+                let mes = format!("{:?}", e);
+                return fut_ok(HttpResponse::build(StatusCode::BAD_REQUEST).body(mes))
             }
         };
 
-        devices.insert(device_name.to_owned(), json_data);
+        match req.connection_info().remote() {
+            Some(r) => {
+                let remote = r.to_string();
+                json_data.insert("ip".to_owned(), json!(remote));
+            }
+            _ => ()
+        };
+
+        devices.insert(device_name.to_owned(), json!(json_data));
         map.insert("devices".to_string(), json!(devices));
 
         fut_ok(HttpResponse::Ok().body("success"))
