@@ -11,8 +11,10 @@ use std::io::prelude::*;
 //use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
-use serde_json::Value;
+use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
+
+use crate::MemoryData;
 
 pub fn index() -> ActixResult<HttpResponse> {
     let mut file = File::open("html/hello.html").unwrap();
@@ -73,7 +75,8 @@ pub fn set_data(
                         );
                         println!("{}", filename);
                         let mut f = BufWriter::new(fs::File::create(filename).unwrap());
-                        f.write_all(data.as_bytes()).expect("could not write to file");
+                        f.write_all(data.as_bytes())
+                            .expect("could not write to file");
                     }
                 }
             } else {
@@ -160,6 +163,63 @@ pub fn load_json(req: HttpRequest) -> impl Future<Item = HttpResponse, Error = E
             .content_type("application/json")
             .body(contents),
     )
+}
+
+pub fn get_device(
+    device_name: web::Path<String>,
+    data: web::Data<MemoryData>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    let map = data.lock().unwrap();
+    let device_name = device_name.to_owned();
+
+    let devices: &Map<String, Value> = match map.get("devices") {
+        Some(d) => d.as_object().unwrap(),
+        None => return fut_ok(HttpResponse::Ok().body("devices are empty")),
+    };
+
+    let device_info: &Value = match devices.get(&device_name) {
+        Some(d) => d,
+        None => return fut_ok(HttpResponse::Ok().body("cannot find device")),
+    };
+
+    fut_ok(HttpResponse::Ok().json(device_info))
+}
+
+pub fn get_devices(data: web::Data<MemoryData>) -> impl Future<Item = HttpResponse, Error = Error> {
+    let map = data.lock().unwrap();
+    let devices: &Value = match map.get("devices") {
+        Some(d) => d,
+        None => return fut_ok(HttpResponse::Ok().body("devices are empty")),
+    };
+    fut_ok(HttpResponse::Ok().json(devices))
+}
+
+pub fn set_device(
+    pl: web::Payload,
+    device_name: web::Path<String>,
+    data: web::Data<MemoryData>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    pl.concat2().from_err().and_then(move |body| {
+        let device_name: String = device_name.to_owned();
+
+        let mut map = data.lock().unwrap();
+        let mut devices: Map<String, Value> = match map.get("devices") {
+            Some(ds) => ds.as_object().unwrap().to_owned(),
+            None => Map::new(),
+        };
+
+        let json_data: Value = match serde_json::from_slice(&body) {
+            Ok(d) => d,
+            Err(_) => {
+                return fut_ok(HttpResponse::build(StatusCode::BAD_REQUEST).body("Error parsing"))
+            }
+        };
+
+        devices.insert(device_name.to_owned(), json_data);
+        map.insert("devices".to_string(), json!(devices));
+
+        fut_ok(HttpResponse::Ok().body("success"))
+    })
 }
 
 pub fn upload_file(

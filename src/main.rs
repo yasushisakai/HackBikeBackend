@@ -1,14 +1,23 @@
 mod handlers;
 
-use std::env;
-
 use actix_cors::Cors;
 use actix_web::http::header;
 use actix_web::middleware::{Logger, NormalizePath};
 use actix_web::{web, App, HttpServer};
+use std::collections::HashMap;
+use std::env;
+use std::sync::{Arc, Mutex};
+
 use log::info;
 
-use handlers::{get_data, index, list_appid, load_json, set_data, upload_file};
+use serde_json::Value;
+
+pub type MemoryData = Arc<Mutex<HashMap<String, Value>>>;
+
+use handlers::{
+    get_data, get_device, get_devices, index, list_appid, load_json, set_data, set_device,
+    upload_file,
+};
 
 fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
@@ -21,6 +30,8 @@ fn main() -> std::io::Result<()> {
 
     let port: String;
 
+    let hashmap: MemoryData = Arc::new(Mutex::new(HashMap::new()));
+
     match env::args().nth(1) {
         Some(new_port) => port = new_port,
         None => port = "8080".to_string(),
@@ -28,6 +39,7 @@ fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .data(hashmap.clone())
             .wrap(Logger::default())
             .wrap(NormalizePath)
             .wrap(
@@ -52,6 +64,12 @@ fn main() -> std::io::Result<()> {
                 web::resource("/api/file/{file_name}").route(web::post().to_async(upload_file)),
             )
             .service(web::resource("/test").route(web::get().to_async(get_data)))
+            .service(
+                web::resource("/api/device/{device_id}")
+                    .route(web::get().to_async(get_device))
+                    .route(web::post().to_async(set_device)),
+            )
+            .service(web::resource("/api/devices").route(web::get().to_async(get_devices)))
         ////////////////////////////////////////////////////////////////////////////////
     })
     .bind(format!("127.0.0.1:{}", &port))
