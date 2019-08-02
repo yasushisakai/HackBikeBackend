@@ -17,13 +17,13 @@ use std::collections::BTreeMap;
 use crate::MemoryData;
 
 pub fn index() -> ActixResult<HttpResponse> {
-    let mut file = File::open("html/hello.html").unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
+    // let mut file = File::open("html/hello.html").unwrap();
+    // let mut contents = String::new();
+    // file.read_to_string(&mut contents).unwrap();
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("text/html")
-        .body(contents))
+        .body("hello world"))
 }
 
 // please reference https://github.com/CityScope/CS_CityIO_Backend for more examples
