@@ -14,8 +14,7 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
-
-use crate::MemoryData;
+use crate::{MemoryData, DATA_DUMP_PATH, DATABASE_PATH};
 
 pub fn index() -> ActixResult<HttpResponse> {
     // let mut file = File::open("html/hello.html").unwrap();
@@ -26,8 +25,6 @@ pub fn index() -> ActixResult<HttpResponse> {
         .content_type("text/html")
         .body("hello world"))
 }
-
-// please reference https://github.com/CityScope/CS_CityIO_Backend for more examples
 
 pub fn get_data() -> impl Future<Item = HttpResponse, Error = Error> {
     // define JSON item in str
@@ -60,7 +57,7 @@ pub fn set_data(
 
         if let Value::String(_) = obj["app_id"] {
             if let Value::Number(_) = obj["start_ts"] {
-                let dirname: &str = &*format!("database/{}", obj["app_id"].as_str().unwrap());
+                let dirname: &str = &*format!("{}/{}", DATABASE_PATH, obj["app_id"].as_str().unwrap());
 
                 match fs::create_dir_all(dirname) {
                     Err(why) => {
@@ -100,7 +97,7 @@ pub fn list_appid() -> ActixResult<HttpResponse> {
                         </head>
                         <body>"#;
     let mut contents = String::new();
-    match fs::read_dir("database") {
+    match fs::read_dir(DATABASE_PATH) {
         Err(why) => {
             contents = format!("{:?}", why.kind());
             println!("! {:?}", why.kind())
@@ -130,7 +127,8 @@ pub fn load_json(req: HttpRequest) -> impl Future<Item = HttpResponse, Error = E
     let mut contents = String::new();
 
     match fs::read_dir(format!(
-        "database/{}",
+        "{}/{}",
+        DATABASE_PATH,
         req.match_info().get("app_id").unwrap()
     )) {
         Err(why) => {
@@ -214,7 +212,7 @@ pub fn set_device(
             Ok(d) => d,
             Err(e) => {
                 let mes = format!("{:?}", e);
-                return fut_ok(HttpResponse::build(StatusCode::BAD_REQUEST).body(mes))
+                return fut_ok(HttpResponse::build(StatusCode::BAD_REQUEST).body(mes));
             }
         };
 
@@ -223,7 +221,7 @@ pub fn set_device(
                 let remote = r.to_string();
                 json_data.insert("ip".to_owned(), json!(remote));
             }
-            _ => ()
+            _ => (),
         };
 
         devices.insert(device_name.to_owned(), json!(json_data));
@@ -243,23 +241,20 @@ pub fn upload_file(
         "--- \n filename: {} \n---",
         req.match_info().get("file_name").unwrap()
     );
-    let dirname = "/home/yasushi/database/raw";
+    let dirname = DATA_DUMP_PATH;
     pl.concat2().from_err().and_then(move |body| {
-
         let (device, file_name) = path.to_owned();
 
         //check if there is the device folder
-        let device_dir = format!("{}/{}", dirname, &device);
+        let device_dir = format!("{}/raw/{}", dirname, &device);
         let device_path = Path::new(&device_dir);
         if !device_path.exists() {
-            fs::create_dir(&device_path).unwrap();
+            fs::create_dir_all(&device_path).unwrap();
         }
-        
-        // let filename = format!("{}/{}", dirname, req.match_info().get("file_name").unwrap());
-        let filename = format!("{}/{}/{}", dirname, device, file_name);
+
+        let filename = format!("{}/raw/{}/{}", dirname, device, file_name);
         println!("{}", &filename);
         let mut file = fs::File::create(&filename).unwrap();
-        let mut f = BufWriter::new(fs::File::create(&filename).unwrap());
         file.write_all(&body).expect("could not write to file");
 
         fut_ok(
@@ -269,19 +264,3 @@ pub fn upload_file(
         )
     })
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

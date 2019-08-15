@@ -9,15 +9,15 @@ use std::env;
 use std::sync::{Arc, Mutex};
 
 use log::info;
-
 use serde_json::Value;
-
 pub type MemoryData = Arc<Mutex<HashMap<String, Value>>>;
-
 use handlers::{
     get_data, get_device, get_devices, index, list_appid, load_json, set_data, set_device,
     upload_file,
 };
+
+pub const DATABASE_PATH: &str = "home/yasushi/database";
+pub const DATA_DUMP_PATH: &str = "home/yasushi/datadump";
 
 fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
@@ -61,7 +61,8 @@ fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/api/data/{app_id}").route(web::get().to_async(load_json)))
             .service(
-                web::resource("/api/file/{device_id}/{file_name}").route(web::post().to_async(upload_file)),
+                web::resource("/api/file/{device_id}/{file_name}")
+                    .route(web::post().to_async(upload_file)),
             )
             .service(web::resource("/test").route(web::get().to_async(get_data)))
             .service(
