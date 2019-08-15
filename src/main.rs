@@ -61,7 +61,7 @@ fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/api/data/{app_id}").route(web::get().to_async(load_json)))
             .service(
-                web::resource("/api/file/{file_name}").route(web::post().to_async(upload_file)),
+                web::resource("/api/file/{device_id}/{file_name}").route(web::post().to_async(upload_file)),
             )
             .service(web::resource("/test").route(web::get().to_async(get_data)))
             .service(

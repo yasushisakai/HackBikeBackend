@@ -8,6 +8,7 @@ use futures::Stream;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 //use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
@@ -234,6 +235,7 @@ pub fn set_device(
 
 pub fn upload_file(
     pl: web::Payload,
+    path: web::Path<(String, String)>,
     req: HttpRequest,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     println!("{:?}", req);
@@ -241,13 +243,24 @@ pub fn upload_file(
         "--- \n filename: {} \n---",
         req.match_info().get("file_name").unwrap()
     );
+    let dirname = "/home/yasushi/database/raw";
     pl.concat2().from_err().and_then(move |body| {
-        //println!("{:?}", body);
-        let dirname = "database";
-        let filename = format!("{}/{}", dirname, req.match_info().get("file_name").unwrap());
-        println!("{}", filename);
-        let mut f = BufWriter::new(fs::File::create(filename).unwrap());
-        f.write_all(&body).expect("could not write to file");
+
+        let (device, file_name) = path.to_owned();
+
+        //check if there is the device folder
+        let device_dir = format!("{}/{}", dirname, &device);
+        let device_path = Path::new(&device_dir);
+        if !device_path.exists() {
+            fs::create_dir(&device_path).unwrap();
+        }
+        
+        // let filename = format!("{}/{}", dirname, req.match_info().get("file_name").unwrap());
+        let filename = format!("{}/{}/{}", dirname, device, file_name);
+        println!("{}", &filename);
+        let mut file = fs::File::create(&filename).unwrap();
+        let mut f = BufWriter::new(fs::File::create(&filename).unwrap());
+        file.write_all(&body).expect("could not write to file");
 
         fut_ok(
             HttpResponse::Ok()
@@ -256,3 +269,19 @@ pub fn upload_file(
         )
     })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
