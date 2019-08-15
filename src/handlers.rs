@@ -253,7 +253,9 @@ pub fn upload_file(
         }
 
         let filename = format!("{}/raw/{}/{}", dirname, device, file_name);
+        
         println!("{}", &filename);
+        
         let mut file = fs::File::create(&filename).unwrap();
         file.write_all(&body).expect("could not write to file");
 

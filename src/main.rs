@@ -16,8 +16,8 @@ use handlers::{
     upload_file,
 };
 
-pub const DATABASE_PATH: &str = "home/yasushi/database";
-pub const DATA_DUMP_PATH: &str = "home/yasushi/datadump";
+pub const DATABASE_PATH: &str = "/home/yasushi/database";
+pub const DATA_DUMP_PATH: &str = "/home/yasushi/datadump";
 
 fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
